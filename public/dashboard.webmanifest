@@ -1,0 +1,21 @@
+{
+  "name": "Household Dashboard",
+  "short_name": "Household",
+  "description": "The wall display: week, list, recipes, budget, what needs a look.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#f7f3ec",
+  "theme_color": "#f7f3ec",
+  "icons": [
+    { "src": "/icons/dashboard-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/dashboard-512.png", "sizes": "512x512", "type": "image/png" },
+    {
+      "src": "/icons/dashboard-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
