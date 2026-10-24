@@ -163,7 +163,9 @@ try {
     # The first thing here that touches the network, and so the first thing
     # that can sit waiting on a credential. Said out loud for that reason.
     Trace "fetching origin/$branch"
-    Git @("fetch", "--quiet", "origin", $branch) "fetching $branch" | Out-Null
+    # A stalled transfer gives up after a minute instead of waiting forever:
+    # one hung fetch is what held this task "running" for two weeks.
+    Git @("-c", "http.lowSpeedLimit=1000", "-c", "http.lowSpeedTime=60", "fetch", "--quiet", "origin", $branch) "fetching $branch" | Out-Null
 
     $head   = Git @("rev-parse", "HEAD") "reading HEAD"
     $remote = Git @("rev-parse", "origin/$branch") "reading origin/$branch"

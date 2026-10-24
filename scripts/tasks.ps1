@@ -92,6 +92,14 @@ function Write-HouseholdHelpers {
 @echo off
 rem Started by the "Household app" scheduled task at logon.
 rem Written by scripts\tasks.ps1 -- edit it there, not here.
+rem
+rem Re-launches itself minimised: run as it is, the server's console came up
+rem in front of the dashboard after a restart and sat over the wall. Still
+rem there on the taskbar for anyone who needs to read it.
+if not "%~1"=="min" (
+  start "Household app" /min "%~f0" min
+  exit /b
+)
 cd /d "$app"
 npm start
 "@ | Set-Content -Path $startCmd -Encoding ASCII
@@ -199,7 +207,13 @@ function Register-HouseholdTasks {
         $forever
 
     # Every ten minutes, and almost always a no-op: it compares two hashes and
-    # stops. The display is wall-mounted with no keyboard, so this is how a
+    # stops.
+    #
+    # Capped at thirty minutes (a cold npm ci plus a build is well inside it).
+    # It had no limit, and one run that hung in October sat "running" for two
+    # weeks: Task Scheduler will not start a task while an instance is still
+    # running, so every ten-minute run and every Update now press was skipped
+    # without a line in update.log. A capped run is ended, and the next one goes. The display is wall-mounted with no keyboard, so this is how a
     # change gets there -- and because the task is not the app, it still works
     # when a bad build has taken the app down.
     $updateTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(3) `
@@ -210,7 +224,7 @@ function Register-HouseholdTasks {
             -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$updatePs1`"") `
         $updateTrigger `
         "Pulls the tracked branch, rebuilds and restarts the app when it moves." `
-        $forever
+        (New-TimeSpan -Minutes 30)
 
     # 11pm to 5am, screen only: the machine stays up so the scan and the updater
     # keep running. Six hours rather than two because the argument is thermal as

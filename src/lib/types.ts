@@ -125,6 +125,13 @@ export interface FrameSettings {
   intervalSeconds: number;
   idleSeconds: number;
   showClock: boolean;
+  /**
+   * How the living-room TV (the tv-home repo) shows portrait photos: cropped to
+   * fill its wide screen, or two portraits side by side, which fills it with
+   * nothing cut off. Only the TV reads this; the wall letterboxes over a blurred
+   * copy either way. Here rather than on the TV so it is chosen from a phone.
+   */
+  tvPortraits: "fill" | "pair";
 }
 
 export const DEFAULT_FRAME: FrameSettings = {
@@ -134,6 +141,7 @@ export const DEFAULT_FRAME: FrameSettings = {
   intervalSeconds: 12,
   idleSeconds: 180,
   showClock: true,
+  tvPortraits: "fill",
 };
 
 export function normaliseFrame(value: unknown): FrameSettings {
@@ -152,6 +160,7 @@ export function normaliseFrame(value: unknown): FrameSettings {
     // reading it; above an hour it would never come on.
     idleSeconds: clamp(raw.idleSeconds, 30, 3600, DEFAULT_FRAME.idleSeconds),
     showClock: raw.showClock !== false,
+    tvPortraits: raw.tvPortraits === "pair" ? "pair" : "fill",
   };
 }
 

@@ -18,6 +18,17 @@ export interface Prepared {
   height: number;
 }
 
+/**
+ * One canvas, reused and emptied after every photo.
+ *
+ * Two fresh canvases per photo looked harmless one at a time, and is what took
+ * the phone down on a 160-photo batch: iOS Safari caps the total memory held by
+ * canvases and frees a discarded one lazily, so a long run of them reaches the
+ * cap and the page is killed mid-upload, with nothing on screen to say why.
+ * Setting the size to zero hands the backing store back straight away.
+ */
+let surface: HTMLCanvasElement | null = null;
+
 async function render(
   bitmap: ImageBitmap,
   edge: number,
@@ -27,18 +38,24 @@ async function render(
   const width = Math.max(1, Math.round(bitmap.width * scale));
   const height = Math.max(1, Math.round(bitmap.height * scale));
 
-  const canvas = document.createElement("canvas");
+  surface ??= document.createElement("canvas");
+  const canvas = surface;
   canvas.width = width;
   canvas.height = height;
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("This browser can't resize images");
-  context.drawImage(bitmap, 0, 0, width, height);
+  try {
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("This browser can't resize images");
+    context.drawImage(bitmap, 0, 0, width, height);
 
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/jpeg", quality),
-  );
-  if (!blob) throw new Error("Could not read that image");
-  return { blob, width, height };
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", quality),
+    );
+    if (!blob) throw new Error("Could not read that image");
+    return { blob, width, height };
+  } finally {
+    canvas.width = 0;
+    canvas.height = 0;
+  }
 }
 
 export async function prepare(file: File): Promise<Prepared> {

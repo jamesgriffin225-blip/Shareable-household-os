@@ -64,6 +64,9 @@ test("frame settings are clamped, so a bad value can't blank the wall", async ()
   // idle timeout means the dashboard is never readable.
   assert.equal(normaliseFrame({ intervalSeconds: 0 }).intervalSeconds, 3);
   assert.equal(normaliseFrame({ intervalSeconds: 99999 }).intervalSeconds, 600);
+  // The TV's portrait choice: only the two values the screen offers survive.
+  assert.equal(normaliseFrame({ tvPortraits: "pair" }).tvPortraits, "pair");
+  assert.equal(normaliseFrame({ tvPortraits: "sideways" }).tvPortraits, "fill");
   assert.equal(normaliseFrame({ idleSeconds: 1 }).idleSeconds, 30);
   assert.equal(normaliseFrame({ idleSeconds: 99999 }).idleSeconds, 3600);
 

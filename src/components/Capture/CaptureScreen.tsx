@@ -62,6 +62,7 @@ export default function CaptureScreen() {
     error: profileError,
   } = useProfile();
   const [busy, setBusy] = useState(false);
+  const [framing, setFraming] = useState<{ done: number; total: number } | null>(null);
   const [result, setResult] = useState<CaptureResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [typed, setTyped] = useState("");
@@ -186,18 +187,34 @@ export default function CaptureScreen() {
       setBusy(true);
       setError(null);
       setResult(null);
-      let added = 0;
+      setFraming({ done: 0, total: files.length });
+      // A big batch takes minutes, and a phone that locks partway stops it.
+      let lock: WakeLockSentinel | null = null;
       try {
-        for (const file of files) {
-          const prepared = await prepare(file);
-          const form = new FormData();
-          form.set("profileId", profileId);
-          form.set("image", prepared.full, "photo.jpg");
-          form.set("thumb", prepared.thumb, "thumb.jpg");
-          form.set("width", String(prepared.width));
-          form.set("height", String(prepared.height));
-          await api("/api/photos", { method: "POST", body: form, profileId });
-          added += 1;
+        lock = (await navigator.wakeLock?.request("screen")) ?? null;
+      } catch {
+        // Not offered here: the progress line asks the person to keep it open.
+      }
+      let added = 0;
+      const failed: string[] = [];
+      try {
+        // One at a time, and one bad photo is that photo, not the end of the
+        // batch: it used to stop at the first failure and say only that.
+        for (const [index, file] of files.entries()) {
+          try {
+            const prepared = await prepare(file);
+            const form = new FormData();
+            form.set("profileId", profileId);
+            form.set("image", prepared.full, "photo.jpg");
+            form.set("thumb", prepared.thumb, "thumb.jpg");
+            form.set("width", String(prepared.width));
+            form.set("height", String(prepared.height));
+            await api("/api/photos", { method: "POST", body: form, profileId });
+            added += 1;
+          } catch (cause) {
+            failed.push(`${file.name}: ${cause instanceof Error ? cause.message : String(cause)}`);
+          }
+          setFraming({ done: index + 1, total: files.length });
         }
         setResult({
           reply: "",
@@ -205,15 +222,22 @@ export default function CaptureScreen() {
           queued: 0,
           outcomes: [
             {
-              executed: true,
+              executed: added > 0,
               action: "add_photo",
               summary: `${added} photo${added === 1 ? "" : "s"} → the frame`,
             },
           ],
         });
-      } catch (cause) {
-        setError(cause instanceof Error ? cause.message : String(cause));
+        if (failed.length > 0) {
+          setError(
+            `${failed.length} of ${files.length} didn't go: ${failed.slice(0, 3).join("; ")}${
+              failed.length > 3 ? `; and ${failed.length - 3} more` : ""
+            }`,
+          );
+        }
       } finally {
+        void lock?.release().catch(() => undefined);
+        setFraming(null);
         setBusy(false);
       }
     },
@@ -398,7 +422,12 @@ export default function CaptureScreen() {
 
       <footer>
         {speech.error ? <div className="banner">{speech.error}</div> : null}
-        {busy ? (
+        {framing ? (
+          <div className="toast toast--working">
+            <span className="spinner" /> Adding {Math.min(framing.done + 1, framing.total)} of{" "}
+            {framing.total} photos — keep this screen open
+          </div>
+        ) : busy ? (
           <div className="toast toast--working">
             <span className="spinner" /> Working out what that was…
           </div>

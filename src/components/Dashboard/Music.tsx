@@ -23,6 +23,8 @@ export interface MusicData {
   stations: Station[];
   oauth: boolean;
   connected: boolean;
+  /** False for a connection made before the now-playing scope was asked for. */
+  seesNowPlaying: boolean;
 }
 
 export function useMusic(profileId: string | null) {
@@ -37,7 +39,13 @@ export function useMusic(profileId: string | null) {
       // Swallowing this reads as "no playlists configured", which sent us
       // looking in the wrong place once already.
       setError(cause instanceof Error ? cause.message : String(cause));
-      setData({ configured: false, stations: [], oauth: false, connected: false });
+      setData({
+        configured: false,
+        stations: [],
+        oauth: false,
+        connected: false,
+        seesNowPlaying: false,
+      });
     }
   }, [profileId]);
 
@@ -264,6 +272,28 @@ function Picker({
                 </div>
               ))}
             </div>
+          </div>
+        ) : null}
+
+        {data.connected && data.oauth ? (
+          // Once connected, the picker replaced the connect button, so there was
+          // no way back to Spotify's consent screen without typing a URL. Needed
+          // whenever the app asks for more than it did when you first connected,
+          // as the now-playing scope did for the TV.
+          <div className="music__reconnect">
+            {data.seesNowPlaying ? null : (
+              <p className="sheet__when">
+                Connected before Spotify was asked what&rsquo;s playing, so the TV
+                and the mini player can&rsquo;t show the current track. Reconnect
+                to allow it; pinned playlists stay as they are.
+              </p>
+            )}
+            <a
+              className={data.seesNowPlaying ? "btn" : "btn btn--primary"}
+              href={`/api/auth/spotify?profile=${encodeURIComponent(profileId)}`}
+            >
+              Reconnect Spotify
+            </a>
           </div>
         ) : null}
 

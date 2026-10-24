@@ -84,10 +84,12 @@ interface SettingsPayload {
   profiles: Profile[];
   connections: Array<{
     profileId: string;
-    provider: "google" | "microsoft";
+    provider: "google" | "microsoft" | "spotify";
     accountEmail: string | null;
     lastScannedAt: string | null;
     needsReauth?: boolean;
+    /** Spotify only: false for a connection made before the now-playing scope. */
+    seesNowPlaying?: boolean;
   }>;
 }
 
@@ -97,6 +99,7 @@ const CHECKS: Array<[string, string, string]> = [
   ["google", "Google OAuth", "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET — calendar and Gmail"],
   ["microsoft", "Microsoft OAuth", "MICROSOFT_CLIENT_ID / MICROSOFT_CLIENT_SECRET — Outlook mail"],
   ["pocketsmith", "Pocketsmith", "POCKETSMITH_API_KEY — budget and renovation spend"],
+  ["spotify", "Spotify", "SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET — playlists, and what's playing for the TV"],
   [
     "cameras",
     "Cameras",
@@ -333,7 +336,7 @@ export default function Settings() {
     }
   };
 
-  const disconnect = async (profileId: string, provider: "google" | "microsoft") => {
+  const disconnect = async (profileId: string, provider: "google" | "microsoft" | "spotify") => {
     await api("/api/auth/disconnect", {
       method: "POST",
       body: JSON.stringify({ provider }),
@@ -383,6 +386,9 @@ export default function Settings() {
             (connection) =>
               connection.profileId === profile.id && connection.provider === "microsoft",
           );
+          const spotify = data?.connections.find(
+            (connection) => connection.profileId === profile.id && connection.provider === "spotify",
+          );
           return (
             <div key={profile.id} style={{ marginBottom: 16 }}>
               <div className="setting" style={{ borderColor: profile.color }}>
@@ -392,7 +398,10 @@ export default function Settings() {
                   </div>
                   <div className="setting__note">
                     Google covers this person&rsquo;s calendar and Gmail; Microsoft covers
-                    their Outlook mail.
+                    their Outlook mail
+                    {data?.configured.spotify
+                      ? "; Spotify lists their playlists and tells the TV what\u2019s playing."
+                      : "."}
                   </div>
                 </div>
               </div>
@@ -439,6 +448,41 @@ export default function Settings() {
                   )}
                 </div>
               ))}
+
+              {data?.configured.spotify ? (
+                // Same row shape as the two above. Reconnect is always offered,
+                // not only when something has expired: a connection made before
+                // the app asked for "what's playing" works for playlists and
+                // silently can't feed the TV, and reconnecting is the only fix.
+                <div className="setting" style={{ marginTop: 8 }}>
+                  <div>
+                    <div className="setting__name">Spotify</div>
+                    <div className="setting__note">
+                      {!spotify
+                        ? "Not connected"
+                        : spotify.seesNowPlaying
+                          ? "Connected \u00b7 playlists and what\u2019s playing"
+                          : "Connected before the TV could ask what\u2019s playing. Reconnect to allow it; pinned playlists stay."}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <a
+                      className={spotify && spotify.seesNowPlaying ? "btn" : "btn btn--primary"}
+                      href={`/api/auth/spotify?profile=${profile.id}&from=settings`}
+                    >
+                      {spotify ? "Reconnect" : "Connect"}
+                    </a>
+                    {spotify ? (
+                      <button
+                        className="btn btn--ghost btn--danger"
+                        onClick={() => void disconnect(profile.id, "spotify")}
+                      >
+                        Disconnect
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
             </div>
           );
         })}

@@ -177,6 +177,19 @@ export default function PhotoLibrary({
               </select>
             </label>
           ) : null}
+          <label className="frame-controls__labelled">
+            <span>Portraits on the TV</span>
+            <select
+              className="field field--inline"
+              value={frame.tvPortraits}
+              onChange={(event) =>
+                void saveFrame({ tvPortraits: event.target.value === "pair" ? "pair" : "fill" })
+              }
+            >
+              <option value="fill">Fill the screen</option>
+              <option value="pair">Two side by side</option>
+            </select>
+          </label>
         </div>
 
         <div className="frame-controls__row frame-controls__row--quiet">

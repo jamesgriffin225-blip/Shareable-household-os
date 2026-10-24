@@ -1669,6 +1669,13 @@ select.btn {
   font-weight: 500;
 }
 
+.music__reconnect {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
 .music__paste {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr) auto;

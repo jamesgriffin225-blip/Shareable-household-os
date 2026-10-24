@@ -23,7 +23,7 @@ you deploy it the same way.
 - `/dashboard` — the wall display. A scrolling day strip and a month calendar, shopping list,
   recipes, photo frame, cameras, robots, money, the approval queue, and who did
   what. Every tile expands to fill the screen and collapses itself again.
-- `/settings` — connect each person's Google and Outlook accounts.
+- `/settings` — connect each person's Google, Outlook and Spotify accounts.
 
 Two installable apps, not three: `/capture` and `/today` share one manifest and
 one home-screen icon, and `/dashboard` has its own.
@@ -226,6 +226,14 @@ a reason that engages with the original one.
   signed-in Premium listener, while the embed's own controls play the whole
   track. So the page renders the player and does not touch it. There is no
   OAuth here and none is wanted.
+- **Spotify always offers Reconnect, in Settings and on the Music tab.** A
+  connection made before the now-playing scope was asked for lists playlists
+  perfectly and can never say what is playing, which is all the living-room TV
+  (the `tv-home` repo) reads from `/api/music/now`. Nothing about that state
+  looks broken from the wall, and once connected the picker had replaced the
+  connect button, so the only fix was a hand-typed URL. Both places now carry
+  the button, flagged as the thing to press when the scope is missing.
+  Sign-in returns to whichever page started it, carried in the signed state.
 - **A web page cannot connect a Bluetooth speaker.** Pairing and output routing
   belong to the operating system, and Web Bluetooth reaches low-energy data
   devices only, never A2DP audio. The Music tab links to the two Windows panels
@@ -452,6 +460,20 @@ a reason that engages with the original one.
   situation you are not in when you need it. Being a separate task means a bad
   build is recovered by pushing a good one and waiting, with nobody at the
   machine -- and there is no keyboard on the machine.
+- **The update task is capped at thirty minutes.** It had no limit, and one
+  run that hung around 9 October sat "running" for two weeks. Task Scheduler
+  will not start a task while an instance is running, so every ten-minute run
+  and every Update now press after it was skipped without writing a line --
+  the wall stayed on `be0e25b` with Settings saying "4 updates waiting" and
+  "update started", both true and neither the reason. Fetches also give up on
+  a transfer that stalls for a minute. A cold `npm ci` plus a build fits well
+  inside the cap; if one ever doesn't, the next run carries on from there.
+- **The app's console starts minimised.** `household-start.cmd` re-launches
+  itself with `start /min`, because after a restart the server's window came
+  up in front of the dashboard and sat over the wall, titled "claude" by the
+  CLI backend. The task now ends as soon as it has launched the server, so
+  `Stop-ScheduledTask` stops nothing; the updater was already stopping the
+  server by the port it holds, which is what still does it.
 - **The update endpoint takes no command, only "go".** It starts one named
   scheduled task through `execFile`, so nothing from a request reaches a shell.
   An endpoint that runs what it is given is a remote shell on the house, and
@@ -571,6 +593,12 @@ a reason that engages with the original one.
   idempotent, so almost every build rewrites the same definitions and changes
   nothing, and a failure there is logged rather than fatal -- a task set one
   commit behind is worth far less than the build going out.
+- **Photos are resized on one reused canvas, emptied after each.** A fresh
+  pair of canvases per photo is harmless one at a time and killed the phone on
+  a 160-photo batch: iOS Safari caps total canvas memory and frees discarded
+  ones lazily, so the page died mid-upload with nothing on screen. The phone's
+  batch also carries on past a photo that fails, says how far through it is,
+  and holds a wake lock, because a phone that locks partway stops the run.
 - **Every control on the phone is at least 44px.** The phone reading was the
   wall's layout stacked, which fitted but was sized for a finger on a 13"
   display at arm's length: an audit at 393px found the profile chips at 26px,
@@ -584,6 +612,26 @@ a reason that engages with the original one.
 - **One light theme, warm paper rather than white.** Accents are the darkened
   text-safe versions because the person colours carry names in the activity
   feed, not just dots.
+
+## Handing a copy to somebody else
+
+`node scripts/package-shareable.mjs --check` builds a de-identified copy as a
+`.bundle` and a `.tar.gz`. The first one was made by hand in a scratch
+directory, which meant "rebuild it" was a transcription exercise and the
+package went stale the moment anything was fixed; the transformations belong
+beside the thing they transform.
+
+It takes exactly the git-tracked files, so nothing untracked can be swept in,
+and **it excludes itself and `scripts/shareable/`** -- the substitution list
+names this household, and shipping it would put back what it exists to
+remove. It refuses to write anything if a forbidden name survives into the
+output, which is the check that matters: a packaging script that fails open
+is worse than no packaging script.
+
+It also rewrites the two places assuming the app is a subdirectory, because
+in the published repo the app is the root, and commits once with no history
+-- this repository's log carries session URLs and a fortnight of debugging
+one particular house.
 
 ## Working on it
 

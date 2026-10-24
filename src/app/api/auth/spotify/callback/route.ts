@@ -9,18 +9,29 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    // Back to the wall, not to Settings: this is started from the Music tab.
-    const done = `${appOrigin(request)}/dashboard`;
+    const state = url.searchParams.get("state");
+    const claims = state ? verifyState(state) : null;
+
+    // Back to wherever the button was pressed: Settings, or the wall's Music
+    // tab. Each reads its own query parameter for how it went.
+    const toSettings = claims?.from === "settings";
+    const back = (outcome: "ok" | string) =>
+      NextResponse.redirect(
+        toSettings
+          ? `${appOrigin(request)}/settings?${
+              outcome === "ok" ? "connected=Spotify" : `error=${encodeURIComponent(`Spotify: ${outcome}`)}`
+            }`
+          : `${appOrigin(request)}/dashboard?spotify=${encodeURIComponent(
+              outcome === "ok" ? "connected" : outcome,
+            )}`,
+      );
 
     const error = url.searchParams.get("error");
-    if (error) return NextResponse.redirect(`${done}?spotify=${encodeURIComponent(error)}`);
+    if (error) return back(error);
 
     const code = url.searchParams.get("code");
-    const state = url.searchParams.get("state");
-    if (!code || !state) return NextResponse.redirect(`${done}?spotify=missing_code`);
-
-    const claims = verifyState(state);
-    if (!claims?.profileId) return NextResponse.redirect(`${done}?spotify=bad_state`);
+    if (!code || !state) return back("missing_code");
+    if (!claims?.profileId) return back("bad_state");
 
     const token = await exchangeSpotifyCode(code, redirectUri("spotify", request));
     await saveConnection({
@@ -33,7 +44,7 @@ export async function GET(request: Request) {
       scope: token.scope,
     });
 
-    return NextResponse.redirect(`${done}?spotify=connected`);
+    return back("ok");
   } catch (error) {
     return handle(error);
   }

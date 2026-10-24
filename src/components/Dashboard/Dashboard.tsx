@@ -103,6 +103,28 @@ export default function Dashboard({
     if (tab === "music") setMusicOpened(true);
   }, [tab]);
 
+  // `/dashboard?tab=cameras&expand=1` opens straight on a tab, filling the
+  // screen. It is how the living-room TV's Cameras and Robots tiles land on the
+  // right panel: a TV remote reaching a tab by arrowing round the wall's
+  // layout is several presses for what should be one. Read once, on arrival;
+  // after that the tabs behave as they always have.
+  const { expand: expandTile } = tiles;
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const wanted = params.get("tab");
+    if (
+      wanted === "shopping" ||
+      wanted === "recipes" ||
+      wanted === "photos" ||
+      wanted === "music" ||
+      wanted === "cameras" ||
+      wanted === "robots"
+    ) {
+      setTab(wanted);
+      if (params.get("expand") === "1") expandTile("lists");
+    }
+  }, [expandTile]);
+
   // Only whether anything is playing: what is playing is the embed's business
   // now that the embed is the floating player.
   const { sounding } = useNowPlaying(profileId, musicOpened);

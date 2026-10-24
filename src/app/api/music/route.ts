@@ -1,5 +1,5 @@
 import { addStation, listStations, removeStation } from "@/lib/music";
-import { embedPath, seedStations, spotifyOauthConfigured } from "@/lib/spotify";
+import { embedPath, scopeHasNowPlaying, seedStations, spotifyOauthConfigured } from "@/lib/spotify";
 import { getConnection } from "@/lib/connections";
 import { fail, handle, json, readJson, requireProfile } from "@/lib/http";
 
@@ -31,6 +31,10 @@ export async function GET(request: Request) {
       stations: saved,
       oauth: spotifyOauthConfigured(),
       connected: Boolean(connection),
+      // A connection made before the now-playing scope existed lists playlists
+      // fine and can never say what is playing, which is the TV's whole use
+      // for it. Only reconnecting fixes that, so the tab has to be able to say so.
+      seesNowPlaying: connection ? scopeHasNowPlaying(connection.scope) : false,
     });
   } catch (error) {
     return handle(error);

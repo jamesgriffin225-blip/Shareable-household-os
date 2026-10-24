@@ -7,6 +7,7 @@ import { handle, json } from "@/lib/http";
 import { microsoftConfigured } from "@/lib/microsoft";
 import { pocketsmithConfigured } from "@/lib/pocketsmith";
 import { listProfiles } from "@/lib/profiles";
+import { scopeHasNowPlaying, spotifyOauthConfigured } from "@/lib/spotify";
 import { householdTimezone } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,7 @@ export async function GET(request: Request) {
       gmail: gmailEnabled(),
       microsoft: microsoftConfigured(),
       pocketsmith: pocketsmithConfigured(),
+      spotify: spotifyOauthConfigured(),
       cameras: homeAssistantConfigured(),
       transcribe: Boolean(process.env.TRANSCRIBE_API_KEY),
       appSecret: Boolean(process.env.APP_SECRET),
@@ -60,6 +62,10 @@ export async function GET(request: Request) {
         accountEmail: connection.accountEmail,
         lastScannedAt: connection.lastScannedAt,
         needsReauth: connection.needsReauth,
+        // Spotify only: a connection from before the now-playing scope lists
+        // playlists but can't say what is playing, which the TV needs.
+        seesNowPlaying:
+          connection.provider === "spotify" ? scopeHasNowPlaying(connection.scope) : undefined,
       })),
     });
   } catch (error) {
