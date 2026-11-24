@@ -29,7 +29,7 @@ export interface AccountChoice {
  * cards. A name match would pick one of each pair and look right while being
  * wrong, which is the worst kind of wrong for a number on a wall.
  *
- * `POCKETSMITH_ACCOUNTS=5388380=Bills & Mortgage,5388405=Spending`
+ * `POCKETSMITH_ACCOUNTS=1000001=Bills & Mortgage,1000002=Spending`
  * Order is preserved. Labels may not contain a comma.
  */
 export function parseAccountChoices(raw: string | undefined): AccountChoice[] {

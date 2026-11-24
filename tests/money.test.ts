@@ -8,11 +8,11 @@ import {
 
 test("account choices are read in order, by id", () => {
   assert.deepEqual(
-    parseAccountChoices("5388380=Bills & Mortgage,5388405=Spending,5388395=Credit Card"),
+    parseAccountChoices("1000001=Bills & Mortgage,1000002=Spending,1000003=Credit Card"),
     [
-      { id: 5388380, label: "Bills & Mortgage" },
-      { id: 5388405, label: "Spending" },
-      { id: 5388395, label: "Credit Card" },
+      { id: 1000001, label: "Bills & Mortgage" },
+      { id: 1000002, label: "Spending" },
+      { id: 1000003, label: "Credit Card" },
     ],
   );
 });
@@ -80,7 +80,7 @@ test("rounding does not leave floating-point dust on a total", () => {
  * said today; the bank had last reported at 09:17.
  */
 const NAB_ACCOUNT = {
-  id: 5388380,
+  id: 1000001,
   title: "Personal Account",
   type: "bank",
   current_balance: 4573.86,

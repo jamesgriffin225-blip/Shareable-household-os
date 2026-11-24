@@ -2,6 +2,29 @@
 
 A coordination app for two people, three screens and one house.
 
+![The wall display](docs/screenshots/dashboard.png)
+
+<p>
+  <img src="docs/screenshots/capture.png" width="49%" alt="Phone capture screen">
+  <img src="docs/screenshots/today.png" width="49%" alt="Phone today screen">
+</p>
+
+*Screenshots use made-up demo data. Money figures are hidden by default.*
+
+## Why it exists
+
+Two working parents, two phones, two calendars and a pile of school emails.
+Things got missed because they lived in one person's head or one person's inbox.
+
+So this is the fix. Say "we're out of nappies and swimming's Thursday at four"
+into a phone and it lands on the list and the calendar. Emails get read for
+anything dated, and anything Claude isn't sure about waits for a tap rather
+than being filed or dropped. The wall in the kitchen shows the lot.
+
+It's built and maintained with Claude Code. `CLAUDE.md` is the most
+interesting file in the repo: it records the decisions and, more usefully,
+the bugs that looked like nothing was wrong.
+
 - **`/capture`** — a phone. One big microphone, one camera button. Say or
   photograph something and it lands in the right place: a calendar event, a
   shopping item, a reminder, a recipe, a note, a spend.
